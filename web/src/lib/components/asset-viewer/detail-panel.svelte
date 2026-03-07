@@ -17,13 +17,7 @@
   import { getByteUnitString } from '$lib/utils/byte-units';
   import { handleError } from '$lib/utils/handle-error';
   import { getParentPath } from '$lib/utils/tree-utils';
-  import {
-    AssetMediaSize,
-    getAllAlbums,
-    getAssetInfo,
-    type AlbumResponseDto,
-    type AssetResponseDto,
-  } from '@immich/sdk';
+  import { AssetMediaSize, getAllAlbums, type AlbumResponseDto, type AssetResponseDto } from '@immich/sdk';
   import { Icon, IconButton, LoadingSpinner, Text } from '@immich/ui';
   import {
     mdiCamera,
@@ -48,9 +42,10 @@
   interface Props {
     asset: AssetResponseDto;
     currentAlbum?: AlbumResponseDto | null;
+    onRefreshPeople?: () => Promise<void>;
   }
 
-  let { asset, currentAlbum = null }: Props = $props();
+  let { asset, currentAlbum = null, onRefreshPeople }: Props = $props();
 
   let showEditFaces = $derived(assetViewerManager.isEditFacesPanelOpen);
   let isOwner = $derived(authManager.authenticated && authManager.user.id === asset.ownerId);
@@ -107,11 +102,6 @@
     }
 
     return undefined;
-  };
-
-  const handleRefreshPeople = async () => {
-    asset = await getAssetInfo({ id: asset.id });
-    assetViewerManager.closeEditFacesPanel();
   };
 
   const getAssetFolderHref = (asset: AssetResponseDto) => {
@@ -495,6 +485,6 @@
     assetId={asset.id}
     assetType={asset.type}
     onClose={() => assetViewerManager.closeEditFacesPanel()}
-    onRefresh={handleRefreshPeople}
+    onRefresh={() => void onRefreshPeople?.()}
   />
 {/if}

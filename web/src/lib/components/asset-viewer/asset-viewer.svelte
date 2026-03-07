@@ -10,6 +10,7 @@
   import { AssetAction, ProjectionType } from '$lib/constants';
   import { activityManager } from '$lib/managers/activity-manager.svelte';
   import { assetViewerManager } from '$lib/managers/asset-viewer-manager.svelte';
+  import { assetCacheManager } from '$lib/managers/AssetCacheManager.svelte';
   import { authManager } from '$lib/managers/auth-manager.svelte';
   import { editManager, EditToolType } from '$lib/managers/edit/edit-manager.svelte';
   import { eventManager } from '$lib/managers/event-manager.svelte';
@@ -98,10 +99,11 @@
   const stackThumbnailSize = 60;
   const stackSelectedThumbnailSize = 65;
 
+  let stack: StackResponseDto | undefined = $state();
+  let selectedStackAsset: AssetResponseDto | undefined = $state();
   let previewStackedAsset: AssetResponseDto | undefined = $state();
-  let stack: StackResponseDto | null = $state(null);
 
-  const asset = $derived(previewStackedAsset ?? cursor.current);
+  const asset = $derived(previewStackedAsset ?? selectedStackAsset ?? cursor.current);
   const nextAsset = $derived(cursor.nextAsset);
   const previousAsset = $derived(cursor.previousAsset);
   let sharedLink = getSharedLink();
@@ -114,17 +116,29 @@
     playOriginalVideo = value;
   };
 
+  const selectStackedAsset = async (id: string) => {
+    ocrManager.clear();
+    selectedStackAsset = await assetCacheManager.getAsset({ id });
+    if (!sharedLink) {
+      await ocrManager.getAssetOcr(id);
+    }
+  };
+
   const refreshStack = async () => {
     if (authManager.isSharedLink || !withStacked) {
       return;
     }
 
-    if (asset.stack) {
-      stack = await getStack({ id: asset.stack.id });
+    if (!cursor.current.stack) {
+      stack = undefined;
+      selectedStackAsset = undefined;
+      return;
     }
 
-    if (!stack?.assets.some(({ id }) => id === asset.id)) {
-      stack = null;
+    stack = await getStack({ id: cursor.current.stack.id });
+    const primaryAsset = stack?.assets.find(({ id }) => id === stack?.primaryAssetId);
+    if (primaryAsset) {
+      await selectStackedAsset(primaryAsset.id);
     }
   };
 
@@ -182,11 +196,21 @@
     onClose?.(asset);
   };
 
+  const refreshPreservingSelection = async () => {
+    const id = asset.id;
+    assetCacheManager.invalidateAsset(id);
+    if (selectedStackAsset) {
+      await selectStackedAsset(id);
+    } else {
+      const asset = await assetCacheManager.getAsset({ id });
+      assetViewerManager.setAsset(asset);
+    }
+    onAssetChange?.(asset);
+  };
+
   const closeEditor = async () => {
     if (editManager.hasAppliedEdits) {
-      const refreshedAsset = await getAssetInfo({ id: asset.id });
-      onAssetChange?.(refreshedAsset);
-      assetViewerManager.setAsset(refreshedAsset);
+      await refreshPreservingSelection();
     }
     assetViewerManager.closeEditor();
   };
@@ -285,10 +309,6 @@
     }
   };
 
-  const handleStackedAssetMouseEvent = (isMouseOver: boolean, stackedAsset: AssetResponseDto) => {
-    previewStackedAsset = isMouseOver ? stackedAsset : undefined;
-  };
-
   const handlePreAction = (action: Action) => {
     preAction?.(action);
   };
@@ -301,7 +321,7 @@
         break;
       }
       case AssetAction.REMOVE_ASSET_FROM_STACK: {
-        stack = action.stack;
+        stack = action.stack ?? undefined;
         if (stack) {
           cursor.current = stack.assets[0];
         }
@@ -368,7 +388,7 @@
 
   $effect(() => {
     // eslint-disable-next-line @typescript-eslint/no-unused-expressions
-    asset;
+    cursor.current;
     untrack(() => handlePromiseError(refresh()));
   });
 
@@ -533,7 +553,12 @@
     {:else if viewerKind === 'CropArea'}
       <CropArea {asset} />
     {:else if viewerKind === 'PhotoViewer'}
-      <PhotoViewer cursor={{ ...cursor, current: asset }} {sharedLink} {onSwipe} />
+      <PhotoViewer
+        cursor={{ ...cursor, current: asset }}
+        {sharedLink}
+        {onSwipe}
+        onTagFace={refreshPreservingSelection}
+      />
     {:else if viewerKind === 'VideoViewer'}
       <VideoViewer
         {asset}
@@ -585,7 +610,7 @@
       translate="yes"
     >
       {#if showDetailPanel}
-        <DetailPanel {asset} currentAlbum={album} />
+        <DetailPanel {asset} currentAlbum={album} onRefreshPeople={refreshPreservingSelection} />
       {:else if assetViewerManager.isShowEditor}
         <EditorPanel {asset} onClose={closeEditor} />
       {/if}
@@ -606,22 +631,27 @@
               brokenAssetClass="text-xs"
               dimmed={stackedAsset.id !== asset.id}
               asset={toTimelineAsset(stackedAsset)}
-              onClick={() => {
-                cursor.current = stackedAsset;
+              onClick={async () => {
+                await selectStackedAsset(stackedAsset.id);
                 previewStackedAsset = undefined;
               }}
-              onMouseEvent={({ isMouseOver }) => handleStackedAssetMouseEvent(isMouseOver, stackedAsset)}
+              onMouseEvent={async ({ isMouseOver }) => {
+                if (isMouseOver) {
+                  previewStackedAsset = stackedAsset;
+                  previewStackedAsset = await assetCacheManager.getAsset({ id: stackedAsset.id });
+                } else {
+                  previewStackedAsset = undefined;
+                }
+              }}
               readonly
               thumbnailSize={stackedAsset.id === asset.id ? stackSelectedThumbnailSize : stackThumbnailSize}
               showStackedIcon={false}
               disableLinkMouseOver
             />
 
-            {#if stackedAsset.id === asset.id}
-              <div class="w-full flex place-items-center place-content-center">
-                <div class="w-2 h-2 bg-white rounded-full flex mt-0.5"></div>
-              </div>
-            {/if}
+            <div class="w-full flex place-items-center place-content-center">
+              <div class={['w-2 h-2 rounded-full flex mt-0.5', { 'bg-white': stackedAsset.id === asset.id }]}></div>
+            </div>
           </div>
         {/each}
       </div>
