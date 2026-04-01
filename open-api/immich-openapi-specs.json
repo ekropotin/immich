@@ -2289,6 +2289,121 @@
         "x-immich-permission": "album.read"
       }
     },
+    "/albums/{id}/user/self": {
+      "get": {
+        "description": "Get the own sharing permissions in a specific album.",
+        "operationId": "getOwnAlbumUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SharingPermissionsResponseDto"
+                }
+              }
+            },
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Get own sharing permissions",
+        "tags": [
+          "Albums"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3",
+            "state": "Added"
+          },
+          {
+            "version": "v3",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "albumAsset.create",
+        "x-immich-state": "Stable"
+      },
+      "put": {
+        "description": "Change the own sharing permissions in a specific album.",
+        "operationId": "updateOwnAlbumUser",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12})$",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateSharingPermissionsDto"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          },
+          {
+            "cookie": []
+          },
+          {
+            "api_key": []
+          }
+        ],
+        "summary": "Update own sharing permissions",
+        "tags": [
+          "Albums"
+        ],
+        "x-immich-history": [
+          {
+            "version": "v3",
+            "state": "Added"
+          },
+          {
+            "version": "v3",
+            "state": "Stable"
+          }
+        ],
+        "x-immich-permission": "albumAsset.create",
+        "x-immich-state": "Stable"
+      }
+    },
     "/albums/{id}/user/{userId}": {
       "delete": {
         "description": "Remove a user from an album. Use an ID of \"me\" to leave a shared album.",
@@ -16742,6 +16857,12 @@
             },
             "type": "array"
           },
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/SharingPermission"
+            },
+            "type": "array"
+          },
           "resized": {
             "description": "Is resized",
             "type": "boolean",
@@ -16818,6 +16939,7 @@
           "originalFileName",
           "originalPath",
           "ownerId",
+          "permissions",
           "thumbhash",
           "type",
           "updatedAt",
@@ -21838,6 +21960,37 @@
         },
         "type": "object"
       },
+      "SharingPermission": {
+        "description": "Sharing permission schema",
+        "enum": [
+          "all",
+          "asset.read",
+          "asset.update",
+          "asset.edit",
+          "asset.delete",
+          "asset.share",
+          "exif.read",
+          "exif.update",
+          "person.read",
+          "person.create",
+          "person.merge"
+        ],
+        "type": "string"
+      },
+      "SharingPermissionsResponseDto": {
+        "properties": {
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/SharingPermission"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "permissions"
+        ],
+        "type": "object"
+      },
       "SignUpDto": {
         "properties": {
           "email": {
@@ -25297,6 +25450,20 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "UpdateSharingPermissionsDto": {
+        "properties": {
+          "permissions": {
+            "items": {
+              "$ref": "#/components/schemas/SharingPermission"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "permissions"
+        ],
         "type": "object"
       },
       "UsageByUserDto": {

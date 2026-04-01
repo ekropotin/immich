@@ -555,6 +555,12 @@ export type MapMarkerResponseDto = {
     /** State/Province name */
     state: string | null;
 };
+export type SharingPermissionsResponseDto = {
+    permissions: SharingPermission[];
+};
+export type UpdateSharingPermissionsDto = {
+    permissions: SharingPermission[];
+};
 export type UpdateAlbumUserDto = {
     role: AlbumUserRole;
 };
@@ -893,6 +899,7 @@ export type AssetResponseDto = {
     /** Owner user ID */
     ownerId: string;
     people?: PersonWithFacesResponseDto[];
+    permissions: SharingPermission[];
     /** Is resized */
     resized?: boolean;
     stack?: (AssetStackResponseDto) | null;
@@ -3768,6 +3775,32 @@ export function getAlbumMapMarkers({ id, key, slug }: {
     }))}`, {
         ...opts
     }));
+}
+/**
+ * Get own sharing permissions
+ */
+export function getOwnAlbumUser({ id }: {
+    id: string;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchJson<{
+        status: 200;
+        data: SharingPermissionsResponseDto;
+    }>(`/albums/${encodeURIComponent(id)}/user/self`, {
+        ...opts
+    }));
+}
+/**
+ * Update own sharing permissions
+ */
+export function updateOwnAlbumUser({ id, updateSharingPermissionsDto }: {
+    id: string;
+    updateSharingPermissionsDto: UpdateSharingPermissionsDto;
+}, opts?: Oazapfts.RequestOpts) {
+    return oazapfts.ok(oazapfts.fetchText(`/albums/${encodeURIComponent(id)}/user/self`, oazapfts.json({
+        ...opts,
+        method: "PUT",
+        body: updateSharingPermissionsDto
+    })));
 }
 /**
  * Remove user from album
@@ -6755,6 +6788,19 @@ export enum BulkIdErrorReason {
     NotFound = "not_found",
     Unknown = "unknown",
     Validation = "validation"
+}
+export enum SharingPermission {
+    All = "all",
+    AssetRead = "asset.read",
+    AssetUpdate = "asset.update",
+    AssetEdit = "asset.edit",
+    AssetDelete = "asset.delete",
+    AssetShare = "asset.share",
+    ExifRead = "exif.read",
+    ExifUpdate = "exif.update",
+    PersonRead = "person.read",
+    PersonCreate = "person.create",
+    PersonMerge = "person.merge"
 }
 export enum Permission {
     All = "all",

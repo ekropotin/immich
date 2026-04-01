@@ -12,7 +12,7 @@
   import { Route } from '$lib/route';
   import { boundingBoxesArray } from '$lib/stores/people.store';
   import { locale } from '$lib/stores/preferences.store';
-  import { getAssetMediaUrl, getPeopleThumbnailUrl } from '$lib/utils';
+  import { getAssetMediaUrl, getPeopleThumbnailUrl, hasPermissions } from '$lib/utils';
   import { delay, getDimensions } from '$lib/utils/asset-utils';
   import { getByteUnitString } from '$lib/utils/byte-units';
   import { handleError } from '$lib/utils/handle-error';
@@ -21,6 +21,7 @@
     AssetMediaSize,
     getAllAlbums,
     getAssetInfo,
+    SharingPermission,
     type AlbumResponseDto,
     type AssetResponseDto,
   } from '@immich/sdk';
@@ -54,6 +55,7 @@
   let { asset, currentAlbum = null }: Props = $props();
 
   let isOwner = $derived(authManager.authenticated && authManager.user.id === asset.ownerId);
+  const allowExifUpdate = $derived(hasPermissions(asset, SharingPermission.ExifUpdate));
   let people = $derived(asset.people || []);
   let unassignedFaces = $derived(asset.unassignedFaces || []);
   let showingHiddenPeople = $state(false);
@@ -162,8 +164,8 @@
       </section>
     {/if}
 
-    <DetailPanelDescription {asset} {isOwner} />
-    <DetailPanelRating {asset} {isOwner} />
+    <DetailPanelDescription {asset} {allowExifUpdate} />
+    <DetailPanelRating {asset} {allowExifUpdate} />
 
     {#if !authManager.isSharedLink && isOwner}
       <section class="px-4 pt-4 text-sm">
@@ -276,7 +278,7 @@
         <Text size="small" color="muted">{$t('no_exif_info_available')}</Text>
       {/if}
 
-      <DetailPanelDate {asset} />
+      <DetailPanelDate {asset} {allowExifUpdate} />
 
       <div class="flex gap-4 py-4">
         <div><Icon icon={mdiImageOutline} size="24" /></div>
@@ -284,7 +286,7 @@
         <div>
           <p class="break-all flex place-items-center gap-2 whitespace-pre-wrap">
             {asset.originalFileName}
-            {#if isOwner}
+            {#if allowExifUpdate}
               <IconButton
                 icon={mdiInformationOutline}
                 aria-label={$t('show_file_location')}
@@ -387,7 +389,7 @@
         </div>
       {/if}
 
-      <DetailPanelLocation {isOwner} {asset} />
+      <DetailPanelLocation {allowExifUpdate} {asset} />
     </div>
   </section>
 
