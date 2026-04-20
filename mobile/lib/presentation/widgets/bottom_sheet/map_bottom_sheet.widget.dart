@@ -39,7 +39,7 @@ class _ScopedMapTimeline extends StatelessWidget {
           }
 
           final users = ref.watch(mapStateProvider).withPartners
-              ? ref.watch(timelineUsersProvider).valueOrNull ?? [user.id]
+              ? ref.watch(timelineUsersProvider).value ?? [user.id]
               : [user.id];
 
           final timelineService = ref

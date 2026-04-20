@@ -363,7 +363,7 @@ class _AssetPageState extends ConsumerState<AssetPage> {
     }
 
     BaseAsset displayAsset = asset;
-    final stackChildren = ref.watch(stackChildrenNotifier(asset)).valueOrNull;
+    final stackChildren = ref.watch(stackChildrenNotifier(asset)).value;
     if (stackChildren != null && stackChildren.isNotEmpty) {
       displayAsset = stackChildren.elementAt(stackIndex);
     }
