@@ -192,26 +192,14 @@ class SyncStreamService {
         final remoteSyncAssets = data.cast<SyncAssetV1>();
         await _syncStreamRepository.updateAssetsV1(remoteSyncAssets);
         if (CurrentPlatform.isAndroid && Store.get(StoreKey.manageLocalMediaAndroid, false)) {
-          final hasPermission = await _localFilesManager.hasManageMediaPermission();
-          if (hasPermission) {
-            await _handleRemoteTrashed(remoteSyncAssets.where((e) => e.deletedAt != null).map((e) => e.checksum));
-            await _applyRemoteRestoreToLocal();
-          } else {
-            _logger.warning("sync Trashed Assets cannot proceed because MANAGE_MEDIA permission is missing");
-          }
+          await _syncTrashedAssets(remoteSyncAssets.where((e) => e.deletedAt != null).map((e) => e.checksum).toList());
         }
         return;
       case SyncEntityType.assetV2:
         final remoteSyncAssets = data.cast<SyncAssetV2>();
         await _syncStreamRepository.updateAssetsV2(remoteSyncAssets);
         if (CurrentPlatform.isAndroid && Store.get(StoreKey.manageLocalMediaAndroid, false)) {
-          final hasPermission = await _localFilesManager.hasManageMediaPermission();
-          if (hasPermission) {
-            await _handleRemoteTrashed(remoteSyncAssets.where((e) => e.deletedAt != null).map((e) => e.checksum));
-            await _applyRemoteRestoreToLocal();
-          } else {
-            _logger.warning("sync Trashed Assets cannot proceed because MANAGE_MEDIA permission is missing");
-          }
+          await _syncTrashedAssets(remoteSyncAssets.where((e) => e.deletedAt != null).map((e) => e.checksum).toList());
         }
         return;
       case SyncEntityType.assetDeleteV1:
@@ -510,6 +498,16 @@ class SyncStreamService {
       await _trashedLocalAssetRepository.applyRestoredAssets(restoredIds);
     } else {
       _logger.info("No remote assets found for restoration");
+    }
+  }
+
+  Future<void> _syncTrashedAssets(List<String> checksums) async {
+    final hasPermission = await _localFilesManager.hasManageMediaPermission();
+    if (hasPermission) {
+      await _handleRemoteTrashed(checksums);
+      await _applyRemoteRestoreToLocal();
+    } else {
+      _logger.warning("Syncing trashed assets cannot proceed because MANAGE_MEDIA permission is missing");
     }
   }
 }
