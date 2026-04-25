@@ -163,6 +163,14 @@ ENV IMMICH_SOURCE_REF=${BUILD_SOURCE_REF}
 ENV IMMICH_SOURCE_COMMIT=${BUILD_SOURCE_COMMIT}
 ENV IMMICH_SOURCE_URL=https://github.com/immich-app/immich/commit/${BUILD_SOURCE_COMMIT}
 
+# For CUDA builds: apt-get autoremove above triggers update-alternatives which
+# resets /usr/local/cuda to cuda-12.2 (pulled by libcudnn9-cuda-12). Re-pin to
+# 12.8 here, after all apt operations, so Blackwell (sm_120) is supported.
+RUN if [ "$DEVICE" = "cuda" ]; then \
+    update-alternatives --set cuda /usr/local/cuda-12.8 2>/dev/null || \
+    ln -sfn /usr/local/cuda-12.8 /usr/local/cuda; \
+fi
+
 LABEL org.opencontainers.image.source="https://github.com/ekropotin/immich" \
       org.opencontainers.image.description="Immich machine-learning with CUDA 12.8 base for Blackwell (sm_120) GPU support. Community patch; see github.com/ekropotin/immich." \
       org.opencontainers.image.licenses="AGPL-3.0"
