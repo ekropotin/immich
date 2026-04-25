@@ -69,6 +69,9 @@ ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2 \
 RUN apt-get update && \
     # Pascal support was dropped in 9.11
     apt-get install --no-install-recommends -yqq libcudnn9-cuda-12=9.10.2.21-1 tzdata && \
+    # libcudnn9-cuda-12 drags in cuda-cudart-12-2 which overwrites the /usr/local/cuda
+    # symlink. Re-pin it to 12.8 so Blackwell (sm_120) is supported.
+    ln -sfn /usr/local/cuda-12.8 /usr/local/cuda && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
