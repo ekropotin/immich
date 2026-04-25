@@ -160,6 +160,10 @@ ENV IMMICH_SOURCE_REF=${BUILD_SOURCE_REF}
 ENV IMMICH_SOURCE_COMMIT=${BUILD_SOURCE_COMMIT}
 ENV IMMICH_SOURCE_URL=https://github.com/immich-app/immich/commit/${BUILD_SOURCE_COMMIT}
 
+LABEL org.opencontainers.image.source="https://github.com/ekropotin/immich" \
+      org.opencontainers.image.description="Immich machine-learning with CUDA 12.8 base for Blackwell (sm_120) GPU support. Community patch; see github.com/ekropotin/immich." \
+      org.opencontainers.image.licenses="AGPL-3.0"
+
 ENTRYPOINT ["tini", "--"]
 CMD ["python", "-m", "immich_ml"]
 

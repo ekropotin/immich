@@ -1,3 +1,30 @@
+# Immich Machine Learning — community fork (Blackwell / CUDA 12.8)
+
+> **This is a community fork** of [immich-app/immich](https://github.com/immich-app/immich) that updates the CUDA base image to 12.8 to support **NVIDIA Blackwell GPUs (RTX 50-series, sm_120)**.
+>
+> **Published image:** `ghcr.io/ekropotin/immich-machine-learning:cuda-blackwell`
+>
+> **Why:** The upstream `release-cuda` image is built on `nvidia/cuda:12.2.2-runtime-ubuntu22.04`. CUDA 12.2 predates sm_120, so ONNX Runtime silently falls back to CPU with no error — the only symptom is 0% GPU utilization. This fork changes the prod-cuda base to `nvidia/cuda:12.8.1-runtime-ubuntu22.04` (see `prod-cuda` stage in `Dockerfile`). An upstream fix was proposed in [immich-app/immich#28032](https://github.com/immich-app/immich/pull/28032).
+>
+> **Usage:**
+> ```yaml
+> # In your docker-compose hwaccel override:
+> services:
+>   immich_machine_learning:
+>     image: ghcr.io/ekropotin/immich-machine-learning:cuda-blackwell
+> ```
+>
+> **Rebuilding locally:**
+> ```bash
+> docker build --build-arg DEVICE=cuda \
+>   -t ghcr.io/ekropotin/immich-machine-learning:cuda-blackwell \
+>   machine-learning/
+> ```
+>
+> Once the upstream PR merges and a new release ships with CUDA 12.8, switch back to the official image.
+
+---
+
 # Immich Machine Learning
 
 - CLIP embeddings
