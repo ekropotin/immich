@@ -61,7 +61,7 @@ RUN apt-get update && \
     apt-get remove wget -yqq && \
     rm -rf /var/lib/apt/lists/*
 
-FROM nvidia/cuda:12.2.2-runtime-ubuntu22.04@sha256:94c1577b2cd9dd6c0312dc04dff9cb2fdce2b268018abc3d7c2dbcacf1155000 AS prod-cuda
+FROM nvidia/cuda:12.8.1-runtime-ubuntu22.04@sha256:4a801ef9232d2b05e69df4eb8aa054dbbe2824e5499e1e6e857320bb01ac41a9 AS prod-cuda
 
 ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2 \
     MACHINE_LEARNING_MODEL_ARENA=false
@@ -69,6 +69,12 @@ ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2 \
 RUN apt-get update && \
     # Pascal support was dropped in 9.11
     apt-get install --no-install-recommends -yqq libcudnn9-cuda-12=9.10.2.21-1 tzdata && \
+    # libcudnn9-cuda-12 pulls in cuda-cudart-12-2 and discards the CUDA 12.8 runtime
+    # that the base image provides. Reinstall 12-8, pin it with apt-mark so
+    # autoremove doesn't strip it, then set it as the primary alternative.
+    apt-get install --no-install-recommends -yqq cuda-cudart-12-8 && \
+    apt-mark manual cuda-cudart-12-8 && \
+    update-alternatives --set cuda /usr/local/cuda-12.8 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -159,6 +165,18 @@ ENV IMMICH_REPOSITORY_URL=https://github.com/immich-app/immich
 ENV IMMICH_SOURCE_REF=${BUILD_SOURCE_REF}
 ENV IMMICH_SOURCE_COMMIT=${BUILD_SOURCE_COMMIT}
 ENV IMMICH_SOURCE_URL=https://github.com/immich-app/immich/commit/${BUILD_SOURCE_COMMIT}
+
+# For CUDA builds: apt-get autoremove above triggers update-alternatives which
+# resets /usr/local/cuda to cuda-12.2 (pulled by libcudnn9-cuda-12). Re-pin to
+# 12.8 here, after all apt operations, so Blackwell (sm_120) is supported.
+RUN if [ "$DEVICE" = "cuda" ]; then \
+    update-alternatives --set cuda /usr/local/cuda-12.8 2>/dev/null || \
+    ln -sfn /usr/local/cuda-12.8 /usr/local/cuda; \
+fi
+
+LABEL org.opencontainers.image.source="https://github.com/ekropotin/immich" \
+      org.opencontainers.image.description="Immich machine-learning with CUDA 12.8 base for Blackwell (sm_120) GPU support. Community patch; see github.com/ekropotin/immich." \
+      org.opencontainers.image.licenses="AGPL-3.0"
 
 ENTRYPOINT ["tini", "--"]
 CMD ["python", "-m", "immich_ml"]
