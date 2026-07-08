@@ -1,5 +1,23 @@
 # Immich — community fork (Blackwell / CUDA 12.8)
 
+> [!CAUTION]
+> ## ⛔ Deprecated — do not use this fork
+>
+> **Use the official image instead:** `ghcr.io/immich-app/immich-machine-learning:release-cuda`.
+>
+> This fork and the `ghcr.io/ekropotin/immich-machine-learning:cuda-blackwell`
+> image are unmaintained and should not be used. The premise below turned out to
+> be **wrong**: the CUDA 12.8 rebase was never necessary. The official image
+> already works on NVIDIA Blackwell (sm_120) — onnxruntime ships PTX that the
+> NVIDIA driver JIT-compiles to sm_120 at runtime (verified on an RTX 5060 Ti,
+> back to onnxruntime 1.19.2). The `CUDA failure 35` this fork tried to fix is a
+> GPU driver / container passthrough problem on the **host**, not a problem with
+> the image. Fix the host GPU passthrough and the stock image works.
+>
+> Full write-up: [immich-app/immich#28583](https://github.com/immich-app/immich/issues/28583).
+>
+> _Everything below is kept for historical context only._
+
 This is a community fork of [immich-app/immich](https://github.com/immich-app/immich) that exists for one purpose: to provide an `immich-machine-learning` image that works on **NVIDIA Blackwell GPUs (RTX 50-series, compute capability sm_120)** until upstream support lands.
 
 ## Why this fork exists
